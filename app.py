@@ -6,9 +6,6 @@ from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
 
 # Load the dataset
 df = pd.read_csv('diabetes.csv')
@@ -17,7 +14,6 @@ df = pd.read_csv('diabetes.csv')
 st.title('Diabetes Checkup')
 st.sidebar.header('Patient Data')
 st.subheader('Training Data Stats')
-
 st.write(df.describe())
 
 # Prepare the data
@@ -46,8 +42,7 @@ def user_report():
         'DiabetesPedigreeFunction': dpf,
         'Age': age
     }
-    report_data = pd.DataFrame(user_report_data, index=[0])
-    return report_data
+    return pd.DataFrame(user_report_data, index=[0])
 
 # Get user data
 user_data = user_report()
@@ -59,8 +54,6 @@ rf = RandomForestClassifier()
 rf.fit(x_train, y_train)
 rf_predictions = rf.predict(x_test)
 rf_probs = rf.predict_proba(user_data)[:, 1]
-
-# Random Forest accuracy
 rf_accuracy = accuracy_score(y_test, rf_predictions)
 
 # Logistic Regression model training
@@ -68,35 +61,16 @@ lr = LogisticRegression()
 lr.fit(x_train, y_train)
 lr_predictions = lr.predict(x_test)
 lr_probs = lr.predict_proba(user_data)[:, 1]
-
-# Logistic Regression accuracy
 lr_accuracy = accuracy_score(y_test, lr_predictions)
 
-# Neural Network model
-nn = Sequential([
-    Dense(16, activation='relu', input_shape=(x_train.shape[1],)),
-    Dense(32, activation='relu'),
-    Dense(1, activation='sigmoid')
-])
-
-# Compile the model
-nn.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-
-# Train the model
-history = nn.fit(x_train, y_train, epochs=50, batch_size=32, validation_split=0.2, verbose=0)
-
-# Evaluate the model
-nn_loss, nn_accuracy = nn.evaluate(x_test, y_test, verbose=0)
-nn_probs = nn.predict(user_data)[0][0]
-
 # Model Selection
-model_selection = st.sidebar.selectbox("Select Model for Prediction", ["Random Forest", "Logistic Regression", "Neural Network"])
+model_selection = st.sidebar.selectbox("Select Model for Prediction", ["Random Forest", "Logistic Regression"])
 
 # Display prediction results based on selected model
 if model_selection == "Random Forest":
     st.subheader('Random Forest Prediction')
     prediction = rf.predict(user_data)[0]
-    probability = rf_probs[0]  # Take the first element
+    probability = rf_probs[0]
     st.write(f"Prediction: {'Diabetic' if prediction == 1 else 'Non-Diabetic'}")
     st.write(f"Probability of Diabetes: {probability:.2f}")
     st.write(f"Accuracy: {rf_accuracy:.2f}")
@@ -104,24 +78,15 @@ if model_selection == "Random Forest":
 elif model_selection == "Logistic Regression":
     st.subheader('Logistic Regression Prediction')
     prediction = lr.predict(user_data)[0]
-    probability = lr_probs[0]  # Take the first element
+    probability = lr_probs[0]
     st.write(f"Prediction: {'Diabetic' if prediction == 1 else 'Non-Diabetic'}")
     st.write(f"Probability of Diabetes: {probability:.2f}")
     st.write(f"Accuracy: {lr_accuracy:.2f}")
-
-else:
-    st.subheader('Neural Network Prediction')
-    prediction = nn.predict(user_data)[0][0]
-    probability = nn_probs  # This is already a single float
-    st.write(f"Prediction: {'Diabetic' if probability > 0.5 else 'Non-Diabetic'}")
-    st.write(f"Probability of Diabetes: {probability:.2f}")
-    st.write(f"Accuracy: {nn_accuracy:.2f}")
 
 # Feature Importance
 importances = rf.feature_importances_
 features = x.columns
 importance_df = pd.DataFrame({'Feature': features, 'Importance': importances}).sort_values(by='Importance', ascending=False)
-
 st.subheader('Feature Importance')
 st.bar_chart(importance_df.set_index('Feature'))
 
